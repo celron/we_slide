@@ -35,6 +35,10 @@ class WeSlideSnapPositionController extends ChangeNotifier {
   }
   void setPosition(double v){
     _position = v;
+    notifyListeners();
+  }
+  double getPosition(){
+    return _position;
   }
   WeSlideSnapPositionController({required this.snapPositions}): super();
 
@@ -51,7 +55,7 @@ class WeSlideSnapPositionController extends ChangeNotifier {
     _snapPosition = a;
   }
   Set<double> getSnapPosition({bool active = false}) {
-    //print('getSnapPoition($bool) $_snapPosition');
+
     if(active == false) {
       return {0.0, 0.0};
     }

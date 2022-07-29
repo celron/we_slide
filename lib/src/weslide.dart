@@ -150,8 +150,6 @@ class WeSlide extends StatefulWidget {
   /// we may need a flag in the controller to tell that is has happened...
   final bool allowFullSlide;
 
-  final double stopPoint = 0.5;
-
   final bool active;
   /// This is the value that create a fade transition over panel header
   final List<TweenSequenceItem<double>> fadeSequence;
@@ -226,10 +224,6 @@ class WeSlide extends StatefulWidget {
       // ignore: unnecessary_this
       this.controller = WeSlideController();
     }
-    if ( WeSlideSnapPositionController == null) {
-      // ignore: unnecessary_this
-      //this.snapPositionController = WeSlideSnapPositionController(snapPositions: [SnapPosition()]);
-    }
   }
 
   @override
@@ -247,7 +241,7 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
   late Animation<double> _scaleAnimation;
   // PanelHeader animation Effect [Tween]
   late Animation<double> _fadeAnimation;
-
+  final slideKey = GlobalKey();
   // Get current controller
   WeSlideController get _effectiveController => widget.controller!;
 
@@ -260,7 +254,6 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
       _ac.status == AnimationStatus.forward;
 
   get active => widget.active;
-
   @override
   void initState() {
     // Subscribe to animated when value change
@@ -427,7 +420,7 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
     //Get MediaQuery Sizes
     final _height = MediaQuery.of(context).size.height;
     final _width = MediaQuery.of(context).size.width;
-    final slideKey = GlobalKey();
+
     return Container(
       height: _height,
       color: widget.backgroundColor, // Same as body,
@@ -514,11 +507,9 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
               if(snapPositionController!=null) {
                 limits =
                 snapPositionController!.getSnapPosition(active: widget.active);
-                //print('set limits not null');
               }
               return SlideTransition(
                 position: _getAnimationOffSet(
-                    // if isMax and opening == true, then maxSize is _
                     maxSize: (limits==null)?_getPanelLocation():
                     (widget.active)?_height * limits.last:_height, //_getPanelLocation(),
                     minSize: (limits==null)?widget.panelMinSize:
@@ -536,7 +527,7 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
                       if (slideKey.currentContext != null) {
                         var renderBox = slideKey.currentContext
                             ?.findRenderObject() as RenderBox;
-                        var offset =
+                        offset =
                             renderBox.localToGlobal(Offset.zero);
                         if(snapPositionController!=null) {
                           snapPositionController!.setPosition(offset.dy);
@@ -545,7 +536,6 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
                       }else{
                         o=0;
                       }
-                      print('clipped _height ${o}');
                     return AnimatedContainer(
                       key: slideKey,
                       height: widget.panelMaxSize,
@@ -556,14 +546,7 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
                           topLeft: Radius.circular(_panelborderRadius.value),
                           topRight: Radius.circular(_panelborderRadius.value),
                         ),
-                        child: ClipRect(
-
-                          child:  Container(child:child,
-                            height: o,
-                            width: _width,
-                            //constraints: BoxConstraints(maxHeight: o, maxWidth:_width),
-                          ),
-                        )),
+                        child: child),
                     );
                   }),
                 ),
