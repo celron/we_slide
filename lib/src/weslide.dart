@@ -118,7 +118,7 @@ class WeSlide extends StatefulWidget {
   /// By default is true
   final bool hidePanelHeader;
 
-  /// This is the value that defines if you want to enable paralax effect.
+  /// This is the value that defines if you want to enable parallax effect.
   /// By default is false
   final bool parallax;
 
@@ -141,11 +141,18 @@ class WeSlide extends StatefulWidget {
   /// The [isDismissible] parameter specifies whether the panel
   /// will be dismissed when user taps on the screen.
   final bool isDismissible;
-  
+
   /// This is the value that need up sliding panel if you want
   /// to enable Slide up through panel. By default is true
   final bool isUpSlide;
 
+  /// this allows the Slide up to cover the entire component/page
+  /// we may need a flag in the controller to tell that is has happened...
+  final bool allowFullSlide;
+
+  final double stopPoint = 0.5;
+
+  final bool active;
   /// This is the value that create a fade transition over panel header
   final List<TweenSequenceItem<double>> fadeSequence;
 
@@ -157,7 +164,9 @@ class WeSlide extends StatefulWidget {
   /// to display panel or check if is visible with variable [isOpened]
   WeSlideController? controller;
 
-  /// Weslide Contructor
+  WeSlideSnapPositionController? snapPositionController;
+
+  /// Weslide Constructor
   WeSlide({
     Key? key,
     this.footer,
@@ -192,9 +201,12 @@ class WeSlide extends StatefulWidget {
     this.hideAppBar = true,
     this.isDismissible = true,
     this.isUpSlide = true,
+    this.allowFullSlide = false,
     List<TweenSequenceItem<double>>? fadeSequence,
     this.animateDuration = const Duration(milliseconds: 300),
     this.controller,
+    this.snapPositionController,
+    this.active = false
   })  : /*assert(body != null, 'body could not be null'),*/
         assert(panelMinSize >= 0.0, 'panelMinSize cannot be negative'),
         assert(footerHeight >= 0.0, 'footerHeight cannot be negative'),
@@ -213,6 +225,10 @@ class WeSlide extends StatefulWidget {
     if (controller == null) {
       // ignore: unnecessary_this
       this.controller = WeSlideController();
+    }
+    if ( WeSlideSnapPositionController == null) {
+      // ignore: unnecessary_this
+      //this.snapPositionController = WeSlideSnapPositionController(snapPositions: [SnapPosition()]);
     }
   }
 
@@ -235,10 +251,15 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
   // Get current controller
   WeSlideController get _effectiveController => widget.controller!;
 
+  WeSlideSnapPositionController? get snapPositionController =>
+      widget.snapPositionController;
+
   // Check if panel is visible
   bool get _ispanelVisible =>
       _ac.status == AnimationStatus.completed ||
       _ac.status == AnimationStatus.forward;
+
+  get active => widget.active;
 
   @override
   void initState() {
@@ -303,13 +324,16 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
     if (widget.isUpSlide == false && _effectiveController.value == false) {
       return;
     }
+    /// _ac_value will go between 0 and 1 and is used for a variety of animations
+    /// it is not the exact position of the panel
     _ac.value -= 1.5 * fractionDragged;
+    if(snapPositionController!=null) {
+      snapPositionController!.setValue(_ac.value);
+      snapPositionController!.onChange();
+    }
   }
-
-  /// Gesture Vertical End [GestureDetector]
   void _handleVerticalEnd(DragEndDetails endDetails) {
     var velocity = endDetails.primaryVelocity!;
-
     if (velocity > 0.0) {
       _ac.reverse().then((x) {
         _effectiveController.value = false;
@@ -331,7 +355,7 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
     }
   }
 
-  // Get Body Animation [Paralax]
+  // Get Body Animation [Parallax]
   Animation<Offset> _getAnimationOffSet(
       {required double minSize, required double maxSize}) {
     final _closedPercentage =
@@ -339,7 +363,6 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
 
     final _openPercentage =
         (widget.panelMaxSize - maxSize) / widget.panelMaxSize;
-
     return Tween<Offset>(
             begin: Offset(0.0, _closedPercentage),
             end: Offset(0.0, _openPercentage))
@@ -357,7 +380,6 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
     if (!widget.hideAppBar && widget.appBar != null) {
       _size += widget.appBarHeight;
     }
-
     return _size;
   }
 
@@ -397,7 +419,6 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
     if (widget.panelMinSize == 0.0 && widget.footer != null) {
       _size += widget.footerHeight;
     }
-
     return _size;
   }
 
@@ -406,7 +427,7 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
     //Get MediaQuery Sizes
     final _height = MediaQuery.of(context).size.height;
     final _width = MediaQuery.of(context).size.width;
-
+    final slideKey = GlobalKey();
     return Container(
       height: _height,
       color: widget.backgroundColor, // Same as body,
@@ -487,24 +508,64 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
           AnimatedBuilder(
             animation: _ac,
             builder: (_, child) {
+              /// code if there is no snapPositionController, revert to old
+              /// code values, if there is, pull from the snapController
+              var limits = null;
+              if(snapPositionController!=null) {
+                limits =
+                snapPositionController!.getSnapPosition(active: widget.active);
+                //print('set limits not null');
+              }
               return SlideTransition(
                 position: _getAnimationOffSet(
-                    maxSize: _getPanelLocation(), minSize: widget.panelMinSize),
+                    // if isMax and opening == true, then maxSize is _
+                    maxSize: (limits==null)?_getPanelLocation():
+                    (widget.active)?_height * limits.last:_height, //_getPanelLocation(),
+                    minSize: (limits==null)?widget.panelMinSize:
+                    (widget.active)?_height * limits.first:0), //widget.panelMinSize),
                 child: GestureDetector(
                   onVerticalDragUpdate: _handleVerticalUpdate,
                   onVerticalDragEnd: _handleVerticalEnd,
-                  child: AnimatedContainer(
-                    height: widget.panelMaxSize,
-                    width: widget.panelWidth ?? _width,
-                    duration: Duration(milliseconds: 200),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(_panelborderRadius.value),
-                        topRight: Radius.circular(_panelborderRadius.value),
-                      ),
-                      child: child,
-                    ),
-                  ),
+                  /// LayoutBuilder is used to get the position of the split
+                  /// which is not normally available.  This is the distance
+                  /// from top to bottom
+                  child: LayoutBuilder(builder:
+                      (context, constraints) {
+                    var offset;
+                    var o;
+                      if (slideKey.currentContext != null) {
+                        var renderBox = slideKey.currentContext
+                            ?.findRenderObject() as RenderBox;
+                        var offset =
+                            renderBox.localToGlobal(Offset.zero);
+                        if(snapPositionController!=null) {
+                          snapPositionController!.setPosition(offset.dy);
+                        }
+                        o =_height- offset.dy;
+                      }else{
+                        o=0;
+                      }
+                      print('clipped _height ${o}');
+                    return AnimatedContainer(
+                      key: slideKey,
+                      height: widget.panelMaxSize,
+                      width: widget.panelWidth ?? _width,
+                      duration: Duration(milliseconds: 200),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(_panelborderRadius.value),
+                          topRight: Radius.circular(_panelborderRadius.value),
+                        ),
+                        child: ClipRect(
+
+                          child:  Container(child:child,
+                            height: o,
+                            width: _width,
+                            //constraints: BoxConstraints(maxHeight: o, maxWidth:_width),
+                          ),
+                        )),
+                    );
+                  }),
                 ),
               );
             },
