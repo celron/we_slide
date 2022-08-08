@@ -506,14 +506,20 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
               var limits = null;
               if(snapPositionController!=null) {
                 limits =
-                snapPositionController!.getSnapPosition(active: widget.active);
+                snapPositionController!.getSnapPosition(active: widget.active,
+                    height: _height);
               }
               return SlideTransition(
+                /// the snapPositionController does not have height information,
+                /// how do we differentiate between a ratio and an absolute
+                /// position? we would have to pass the height to the
+                /// snapcontroller, or perform the calculation knowing the type
+                /// of snapPosition
                 position: _getAnimationOffSet(
                     maxSize: (limits==null)?_getPanelLocation():
-                    (widget.active)?_height * limits.last:_height, //_getPanelLocation(),
+                    (widget.active)?limits.last:_height, //_getPanelLocation(),
                     minSize: (limits==null)?widget.panelMinSize:
-                    (widget.active)?_height * limits.first:0), //widget.panelMinSize),
+                    (widget.active)?limits.first:0), //widget.panelMinSize),
                 child: GestureDetector(
                   onVerticalDragUpdate: _handleVerticalUpdate,
                   onVerticalDragEnd: _handleVerticalEnd,

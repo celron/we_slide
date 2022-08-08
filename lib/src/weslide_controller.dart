@@ -22,9 +22,10 @@ class WeSlideSnapPositionController extends ChangeNotifier {
   double _value = 0;
   double _position = 0;
   int _snapPosition = 1;
+  /// we either go up v=1 or down v=0
   void setValue(double v){
     _value = v;
-    if(_value == 1 && _snapPosition <2){
+    if(_value == 1 && _snapPosition < (snapPositions.length-1)){
       _snapPosition ++;
       // snap up
     }
@@ -33,6 +34,7 @@ class WeSlideSnapPositionController extends ChangeNotifier {
       // snap down
     }
   }
+  /// not sure what setPosition is for?
   void setPosition(double v){
     _position = v;
     notifyListeners();
@@ -54,7 +56,9 @@ class WeSlideSnapPositionController extends ChangeNotifier {
   setSnapPosition(int a){
     _snapPosition = a;
   }
-  Set<double> getSnapPosition({bool active = false}) {
+  /// active if the snap is active
+  /// height provides the current height of the container
+  Set<double> getSnapPosition({bool active = false, required double height}) {
 
     if(active == false) {
       return {0.0, 0.0};
@@ -62,15 +66,17 @@ class WeSlideSnapPositionController extends ChangeNotifier {
     if (_snapPosition == 0) {
       return {0.0, 0.0};
     }
-    // if it is at position 1 then it is at 0.7
-    // it can go down to 0.3 or up to 1.0
-    if (_snapPosition == 1) {
-      return {0.3, .7};
-    }
-    if (_snapPosition ==2){
-      return {.7, 1.0};
-    }
-    return {0.0, 0.0};
+    /// if snapPosition (n) >0 then it has to return
+    /// n and n+1, snapPosition can not be greater than n-1, so if there are
+    /// only two entries, n can only be 1
+
+    return ({(snapPositions[_snapPosition-1].type==0)?
+      snapPositions[_snapPosition-1].snapPosition * height:
+      snapPositions[_snapPosition-1].snapPosition,
+      (snapPositions[_snapPosition].type==0)?
+        snapPositions[_snapPosition].snapPosition * height:
+      snapPositions[_snapPosition].snapPosition,
+    });
   }
 }
 
