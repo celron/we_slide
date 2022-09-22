@@ -420,6 +420,16 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
     //Get MediaQuery Sizes
     final _height = MediaQuery.of(context).size.height;
     final _width = MediaQuery.of(context).size.width;
+    /// the min size is the starting size for the Slide Transition
+    var limits = null;
+    if(snapPositionController!=null) {
+      limits =
+          snapPositionController!.getSnapPosition(active: widget.active,
+              height: _height);
+    }
+    var value =(limits==null)?widget.panelMinSize:
+    (widget.active)?limits.first:0;
+    snapPositionController!.setPosition(value);
 
     return Container(
       height: _height,
