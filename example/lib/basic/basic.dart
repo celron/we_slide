@@ -15,13 +15,14 @@ class _BasicState extends State<Basic> {
     final double _panelMinSize = 130.0;
     final double _panelMaxSize = MediaQuery.of(context).size.height;
     final _controller = WeSlideController();
+    final _footerController = WeSlideController(initial: true);
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: WeSlide(
         parallax: true,
         hideAppBar: true,
-        hideFooter: false,
+        hideFooter: true,
         panelMinSize: _panelMinSize,
         panelMaxSize: _panelMaxSize,
         backgroundColor: Colors.tealAccent,
@@ -31,6 +32,7 @@ class _BasicState extends State<Basic> {
         appBarHeight: 80.0,
         footerHeight: 60.0,
         controller: _controller,
+        footerController: _footerController,
         appBar: AppBar(
           title: Text("We Slide"),
           leading: BackButton(),
@@ -38,7 +40,19 @@ class _BasicState extends State<Basic> {
         ),
         body: Container(
           color: Colors.tealAccent,
-          child: Center(child: Text("This is the body 💪")),
+          child: TextButton(
+            child: Text(
+              "This is the body 💪",
+              style: TextStyle(color: Colors.green),
+            ),
+            onPressed: () {
+              if (_footerController.value) {
+                _footerController.hide();
+              } else {
+                _footerController.show();
+              }
+            },
+          ),
         ),
         panel: Container(
           color: _colorScheme.primary,
