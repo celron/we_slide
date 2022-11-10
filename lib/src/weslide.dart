@@ -148,8 +148,6 @@ class WeSlide extends StatefulWidget {
 
   /// this allows the Slide up to cover the entire component/page
   /// we may need a flag in the controller to tell that is has happened...
-  final bool allowFullSlide;
-
   final bool active;
   /// This is the value that create a fade transition over panel header
   final List<TweenSequenceItem<double>> fadeSequence;
@@ -199,7 +197,6 @@ class WeSlide extends StatefulWidget {
     this.hideAppBar = true,
     this.isDismissible = true,
     this.isUpSlide = true,
-    this.allowFullSlide = false,
     List<TweenSequenceItem<double>>? fadeSequence,
     this.animateDuration = const Duration(milliseconds: 300),
     this.controller,
@@ -317,13 +314,14 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
     if (widget.isUpSlide == false && _effectiveController.value == false) {
       return;
     }
-    /// _ac_value will go between 0 and 1 and is used for a variety of animations
+    ///<<< _ac_value will go between 0 and 1 and is used for a variety of animations
     /// it is not the exact position of the panel
     _ac.value -= 1.5 * fractionDragged;
     if(snapPositionController!=null) {
       snapPositionController!.setValue(_ac.value);
       snapPositionController!.onChange();
     }
+    ///<<<
   }
   void _handleVerticalEnd(DragEndDetails endDetails) {
     var velocity = endDetails.primaryVelocity!;
@@ -420,17 +418,12 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
     //Get MediaQuery Sizes
     final _height = MediaQuery.of(context).size.height;
     final _width = MediaQuery.of(context).size.width;
-    /// the min size is the starting size for the Slide Transition
-    var limits = null;
-    if(snapPositionController!=null) {
-      limits =
-          snapPositionController!.getSnapPosition(active: widget.active,
-              height: _height);
-    }
-    var value =(limits==null)?widget.panelMinSize:
-    (widget.active)?limits.first:0;
-    snapPositionController!.setPosition(value);
-
+    ///<<< the min size is the starting size for the Slide Transition
+    ///why is this  duplicated, is this needed? we need to set the value in line 430
+    var limits = checkSnap(snapPositionController, _height);
+    ///<<< see 513-521 for 421 to 427
+    snapPositionController!.setPosition(getValue(limits));
+    ///<<<<
     return Container(
       height: _height,
       color: widget.backgroundColor, // Same as body,
@@ -511,20 +504,17 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
           AnimatedBuilder(
             animation: _ac,
             builder: (_, child) {
-              /// code if there is no snapPositionController, revert to old
+              ///<<< code if there is no snapPositionController, revert to old
               /// code values, if there is, pull from the snapController
-              var limits = null;
-              if(snapPositionController!=null) {
-                limits =
-                snapPositionController!.getSnapPosition(active: widget.active,
-                    height: _height);
-              }
+              var limits  = checkSnap(snapPositionController, _height);
+              ///<<<
               return SlideTransition(
                 /// the snapPositionController does not have height information,
                 /// how do we differentiate between a ratio and an absolute
                 /// position? we would have to pass the height to the
-                /// snapcontroller, or perform the calculation knowing the type
+                /// snapController, or perform the calculation knowing the type
                 /// of snapPosition
+                /// if there are no limits (from the snapController), then we default to _getPanelLocation and widget.panelMinSize
                 position: _getAnimationOffSet(
                     maxSize: (limits==null)?_getPanelLocation():
                     (widget.active)?limits.last:_height, //_getPanelLocation(),
@@ -533,38 +523,21 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
                 child: GestureDetector(
                   onVerticalDragUpdate: _handleVerticalUpdate,
                   onVerticalDragEnd: _handleVerticalEnd,
-                  /// LayoutBuilder is used to get the position of the split
-                  /// which is not normally available.  This is the distance
-                  /// from top to bottom
-                  child: LayoutBuilder(builder:
-                      (context, constraints) {
-                    var offset;
-                    var o;
-                      if (slideKey.currentContext != null) {
-                        var renderBox = slideKey.currentContext
-                            ?.findRenderObject() as RenderBox;
-                        offset =
-                            renderBox.localToGlobal(Offset.zero);
-                        if(snapPositionController!=null) {
-                          snapPositionController!.setPosition(offset.dy);
-                        }
-                        o =_height- offset.dy;
-                      }else{
-                        o=0;
-                      }
-                    return AnimatedContainer(
-                      key: slideKey,
-                      height: widget.panelMaxSize,
-                      width: widget.panelWidth ?? _width,
-                      duration: Duration(milliseconds: 200),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(_panelborderRadius.value),
-                          topRight: Radius.circular(_panelborderRadius.value),
-                        ),
-                        child: child),
-                    );
-                  }),
+                  child: BufferCall(slideKey, snapPositionController, child:
+                        AnimatedContainer(
+                     key: slideKey,
+                    height: widget.panelMaxSize,
+                    width: widget.panelWidth ?? _width,
+                    duration: Duration(milliseconds: 200),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(_panelborderRadius.value),
+                        topRight: Radius.circular(_panelborderRadius.value),
+                      ),
+                      child: child,
+                     ),
+                    ),
+                  ),
                 ),
               );
             },
@@ -634,5 +607,36 @@ class _WeSlideState extends State<WeSlide> with SingleTickerProviderStateMixin {
         ],
       ),
     );
+  }
+  checkSnap(snapPositionController, _height){
+    if(snapPositionController!=null) {
+      return snapPositionController!.getSnapPosition(active: widget.active,
+              height: _height);
+    }
+    return null;
+  }
+  getValue(limits){
+    return (limits==null)?widget.panelMinSize:
+    (widget.active)?limits.first:0;
+  }
+  Widget BufferCall(slideKey, snapPositionController, {child}){
+    /// LayoutBuilder is used to get the position of the split
+    /// which is not normally available.  This is the distance
+    /// from top to bottom, however we return an AnimatedContainer as in the original with a key
+    return LayoutBuilder(
+        builder:
+    (context, constraints) {
+      var offset;
+      if (slideKey.currentContext != null) {
+        var renderBox = slideKey.currentContext
+            ?.findRenderObject() as RenderBox;
+        offset =
+            renderBox.localToGlobal(Offset.zero);
+        if(snapPositionController!=null) {
+          snapPositionController!.setPosition(offset.dy);
+        }
+      }
+      ///<<<
+      return child;});
   }
 }
