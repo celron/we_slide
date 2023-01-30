@@ -37,10 +37,12 @@ class WeSlideSnapPositionController extends ChangeNotifier {
   }
   /// not sure what setPosition is for?
   void setPosition(double v){
+    // this will disjunct the position from the snapPosition
     _position = v;
     notifyListeners();
   }
   double getPosition(){
+    // note that if we get the position, this has to be multiplied by the height
     return _position;
   }
   WeSlideSnapPositionController({required this.snapPositions}): super();
@@ -59,6 +61,7 @@ class WeSlideSnapPositionController extends ChangeNotifier {
   }
   /// active if the snap is active
   /// height provides the current height of the container
+  /// This returns two values, the stop position ( in pixels) and the next stop
   Set<double> getSnapPosition({bool active = false, required double height}) {
 
     if(active == false) {
@@ -78,6 +81,9 @@ class WeSlideSnapPositionController extends ChangeNotifier {
         snapPositions[_snapPosition].snapPosition * height:
       snapPositions[_snapPosition].snapPosition,
     });
+  }
+  double getSnapValue(){
+    return snapPositions[_snapPosition -1].snapPosition;
   }
   int getValue(){
     return _snapPosition;
