@@ -79,6 +79,9 @@ class WeSlideSnapPositionController extends ChangeNotifier {
       snapPositions[_snapPosition].snapPosition,
     });
   }
+  int getValue(){
+    return _snapPosition;
+  }
 }
 
 class SnapPosition {
