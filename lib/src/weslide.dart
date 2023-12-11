@@ -565,7 +565,7 @@ class _WeSlideState extends State<WeSlide> with TickerProviderStateMixin {
                     maxSize: (limits==null)?_getPanelLocation():
                     (widget.active)?limits.last:_height, //_getPanelLocation(),
                     minSize: (limits==null)?widget.panelMinSize:
-                    (widget.active)?limits.first:0), //widget.panelMinSize),
+                    (widget.active)?limits.first:0.0), //widget.panelMinSize),
                 child: GestureDetector(
                   onVerticalDragUpdate: _handleVerticalUpdate,
                   onVerticalDragEnd: _handleVerticalEnd,
@@ -641,8 +641,8 @@ class _WeSlideState extends State<WeSlide> with TickerProviderStateMixin {
                       top: widget.hideAppBar
                           ? _ac.value * -widget.appBarHeight
                           : 0.0,
-                      left: 0,
-                      right: 0,
+                      left: 0.0,
+                      right: 0.0,
                       child: widget.appBar!,
                     );
                   },
@@ -661,7 +661,7 @@ class _WeSlideState extends State<WeSlide> with TickerProviderStateMixin {
   }
   getValue(limits){
     return (limits==null)?widget.panelMinSize:
-    (widget.active)?limits.first:0;
+    (widget.active)?limits.first:0.0;
   }
   Widget BufferCall(slideKey, snapPositionController, {child}){
     /// LayoutBuilder is used to get the position of the split
