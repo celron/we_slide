@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 class WeSlideController extends ValueNotifier<bool> {
   /// WeSlideController Construction
   // ignore: avoid_positional_boolean_parameters
-  WeSlideController({bool initial = false}) : super(initial);
+  WeSlideController({bool initial = false, active}) : super(initial);
+
+  final bool active = false;
 
   /// show WeSlide Panel
   void show() => value = true;
@@ -20,9 +22,11 @@ class WeSlideController extends ValueNotifier<bool> {
 // if this is keeping track of snap positions, then we shouldn't use a
 // changeNotifier
 class WeSlideSnapPositionController extends ChangeNotifier {
+
   double _value = 0;
   double _position = 0;
   int _snapPosition = 1;
+  bool _active = false;
   /// we either go up v=1 or down v=0
   void setValue(double v){
     _value = v;
@@ -40,6 +44,12 @@ class WeSlideSnapPositionController extends ChangeNotifier {
     // this will disjunct the position from the snapPosition
     _position = v;
     notifyListeners();
+  }
+  void setActive(bool a){
+    _active = a;
+  }
+  bool getActive() {
+    return _active;
   }
   double getPosition(){
     // note that if we get the position, this has to be multiplied by the height
@@ -63,8 +73,7 @@ class WeSlideSnapPositionController extends ChangeNotifier {
   /// height provides the current height of the container
   /// This returns two values, the stop position ( in pixels) and the next stop
   Set<double> getSnapPosition({bool active = false, required double height}) {
-
-    if(active == false) {
+    if(_active == false) {
       return {0.0, 0.0};
     }
     if (_snapPosition == 0) {
@@ -83,6 +92,9 @@ class WeSlideSnapPositionController extends ChangeNotifier {
     });
   }
   double getSnapValue(){
+    if(_active==false) {
+      return 1.0;
+    }
     return snapPositions[_snapPosition -1].snapPosition;
   }
   int getValue(){

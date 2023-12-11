@@ -300,7 +300,6 @@ class _WeSlideState extends State<WeSlide> with TickerProviderStateMixin {
         .animate(_ac);
     // Fade Animation sequence
     _fadeAnimation = TweenSequence(widget.fadeSequence).animate(_ac);
-
     // Super Init State
     super.initState();
   }
@@ -461,6 +460,7 @@ class _WeSlideState extends State<WeSlide> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    snapPositionController?.setActive(widget.active);
     //Get MediaQuery Sizes
     final _height = MediaQuery.of(context).size.height;
     final _width = MediaQuery.of(context).size.width;
